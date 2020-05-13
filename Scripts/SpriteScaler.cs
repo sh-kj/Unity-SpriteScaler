@@ -1,8 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UniRx;
-using UniRx.Triggers;
 
 
 namespace radiants.SpriteScaler
@@ -29,16 +27,21 @@ namespace radiants.SpriteScaler
 			}
 		}
 
+		private bool _preserveAspect;
 		public bool preserveAspect
 		{
-			get { return PreserveAspectReactive.Value; }
-			set { PreserveAspectReactive.Value = value; }
+			get { return _preserveAspect; }
+			set
+			{
+				_preserveAspect = value;
+				AdjustSpriteScale();
+			}
 		}
 
 		public Color color
 		{
-			get { return ColorReactive.Value; }
-			set { ColorReactive.Value = value; }
+			get { return TargetRenderer.color; }
+			set { TargetRenderer.color = value; }
 		}
 
 		public bool flipX
@@ -125,58 +128,32 @@ namespace radiants.SpriteScaler
 
 		#endregion
 
-		#region Observables
-
-		[SerializeField]
-		private BoolReactiveProperty PreserveAspectReactive = new BoolReactiveProperty(false);
-
-		[SerializeField]
-		private ColorReactiveProperty ColorReactive = new ColorReactiveProperty(UnityEngine.Color.white);
-
-		private Subject<Unit> RectTransformDimensionsChangedSubject = new Subject<Unit>();
-
-		private CompositeDisposable disposables = new CompositeDisposable();
-
-		#endregion
 
 		#region Monobehaviour callback
 
 		private void OnRectTransformDimensionsChange()
 		{
-			RectTransformDimensionsChangedSubject.OnNext(Unit.Default);
+			if(this.enabled)
+			{
+				AdjustSpriteScale();
+			}
 		}
 
 		private void OnEnable()
 		{
 			TargetRenderer.enabled = true;
-			//ResearchParentGroups();
-
-			RectTransformDimensionsChangedSubject
-				.Where(_ => TargetRenderer.sprite != null)
-				.Subscribe(_ => AdjustSpriteScale())
-				.AddTo(disposables);
-
-			PreserveAspectReactive
-				.Where(_ => TargetRenderer.sprite != null)
-				.Subscribe(_ => AdjustSpriteScale())
-				.AddTo(disposables);
-
-			ColorReactive.Subscribe(_ => UpdateColor())
-				.AddTo(disposables);
+			AdjustSpriteScale();
 		}
 
 		private void OnDisable()
 		{
-			if (TargetRenderer != null)
-				TargetRenderer.enabled = false;
-
-			disposables.Clear();
+			TargetRenderer.enabled = false;
 		}
 
 		private void OnDestroy()
 		{
+			//Destroy Hidden Child
 			Destroy(TargetRenderer.gameObject);
-			disposables.Dispose();
 		}
 
 		#endregion
@@ -185,6 +162,8 @@ namespace radiants.SpriteScaler
 
 		public void AdjustSpriteScale()
 		{
+			if (TargetRenderer.sprite == null) return;
+
 			var originalBounds = TargetRenderer.sprite.bounds.size;
 			Vector3 scale;
 
@@ -199,7 +178,7 @@ namespace radiants.SpriteScaler
 			{
 				//normal
 				scale = new Vector3(MyRectTransform.rect.size.x / originalBounds.x, MyRectTransform.rect.size.y / originalBounds.y, 1f);
-				if (PreserveAspectReactive.Value)
+				if (preserveAspect)
 					PreserveAspectScale(ref scale);
 			}
 
@@ -220,18 +199,6 @@ namespace radiants.SpriteScaler
 		}
 
 		#endregion
-
-		#region Modify Colors
-
-
-		private void UpdateColor()
-		{
-			Color c = ColorReactive.Value;
-			TargetRenderer.color = c;
-		}
-
-		#endregion
-
 	}
 
 }
