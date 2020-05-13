@@ -4,15 +4,15 @@ using UnityEngine;
 using UniRx;
 using UniRx.Triggers;
 
+
 namespace radiants.SpriteScaler
 {
-	//todo custom Material
-	//note: Mask関連は要ドキュメント化
-
 	[ExecuteInEditMode]
 	[RequireComponent(typeof(RectTransform))]
 	public class SpriteScaler : MonoBehaviour
 	{
+		#region Properties
+
 		public Sprite RenderingSprite
 		{
 			get
@@ -29,31 +29,109 @@ namespace radiants.SpriteScaler
 			}
 		}
 
+		public bool preserveAspect
+		{
+			get { return PreserveAspectReactive.Value; }
+			set { PreserveAspectReactive.Value = value; }
+		}
+
+		public Color color
+		{
+			get { return ColorReactive.Value; }
+			set { ColorReactive.Value = value; }
+		}
+
+		public bool flipX
+		{
+			get { return TargetRenderer.flipX; }
+			set { TargetRenderer.flipX = value; }
+		}
+		public bool flipY
+		{
+			get { return TargetRenderer.flipY; }
+			set { TargetRenderer.flipY = value; }
+		}
+
+		public SpriteDrawMode drawMode
+		{
+			get { return TargetRenderer.drawMode; }
+			set { TargetRenderer.drawMode = value; }
+		}
+
+		public SpriteMaskInteraction maskInteraction
+		{
+			get { return TargetRenderer.maskInteraction; }
+			set { TargetRenderer.maskInteraction = value; }
+		}
+
+		public SpriteSortPoint sortPoint
+		{
+			get { return TargetRenderer.spriteSortPoint; }
+			set { TargetRenderer.spriteSortPoint = value; }
+		}
+
+		public Material material
+		{
+			get { return TargetRenderer.sharedMaterial; }
+			set { TargetRenderer.sharedMaterial = value; }
+		}
+
+		public int sortingLayerID
+		{
+			get { return TargetRenderer.sortingLayerID; }
+			set { TargetRenderer.sortingLayerID = value; }
+		}
+
+		public int orderInLayer
+		{
+			get { return TargetRenderer.sortingOrder; }
+			set { TargetRenderer.sortingOrder = value; }
+		}
+
+		#endregion
+
+
 
 		#region references
 
 		private RectTransform _MyRectTransform;
-		public RectTransform MyRectTransform
+		private RectTransform MyRectTransform
 		{ get { if (_MyRectTransform == null) _MyRectTransform = GetComponent<RectTransform>(); return _MyRectTransform; } }
 
 		[SerializeField]
-		public SpriteRenderer _TargetRenderer;
-		public SpriteRenderer TargetRenderer
-		{ get { return _TargetRenderer; } }
+		private SpriteRenderer _TargetRenderer;
+		private SpriteRenderer TargetRenderer
+		{ get { if (_TargetRenderer == null) CreateAndLinkChildSprite(); return _TargetRenderer; } }
 		[SerializeField]
-		public Transform _TargetTransform;
-		public Transform TargetTransform
-		{ get { return _TargetTransform; } }
+		private Transform _TargetTransform;
+		private Transform TargetTransform
+		{ get { if (_TargetTransform == null) CreateAndLinkChildSprite(); return _TargetTransform; } }
+
+		#endregion
+
+		#region Make Child Sprite
+
+		private void CreateAndLinkChildSprite()
+		{
+			GameObject child = new GameObject("_Sprite");
+			child.hideFlags = HideFlags.HideAndDontSave;
+			_TargetTransform = child.transform;
+			child.transform.SetParent(MyRectTransform);
+			child.transform.SetSiblingIndex(0);
+			child.transform.localRotation = Quaternion.identity;
+			child.layer = gameObject.layer;
+			_TargetRenderer = child.AddComponent<SpriteRenderer>();
+		}
 
 		#endregion
 
 		#region Observables
 
 		[SerializeField]
-		public BoolReactiveProperty PreserveAspect = new BoolReactiveProperty(false);
+		private BoolReactiveProperty PreserveAspectReactive = new BoolReactiveProperty(false);
 
 		[SerializeField]
-		public ColorReactiveProperty color = new ColorReactiveProperty(Color.white);
+		private ColorReactiveProperty ColorReactive = new ColorReactiveProperty(UnityEngine.Color.white);
 
 		private Subject<Unit> RectTransformDimensionsChangedSubject = new Subject<Unit>();
 
@@ -70,8 +148,6 @@ namespace radiants.SpriteScaler
 
 		private void OnEnable()
 		{
-			if (TargetRenderer == null) return;
-
 			TargetRenderer.enabled = true;
 			//ResearchParentGroups();
 
@@ -80,12 +156,12 @@ namespace radiants.SpriteScaler
 				.Subscribe(_ => AdjustSpriteScale())
 				.AddTo(disposables);
 
-			PreserveAspect
+			PreserveAspectReactive
 				.Where(_ => TargetRenderer.sprite != null)
 				.Subscribe(_ => AdjustSpriteScale())
 				.AddTo(disposables);
 
-			color.Subscribe(_ => UpdateColor())
+			ColorReactive.Subscribe(_ => UpdateColor())
 				.AddTo(disposables);
 		}
 
@@ -99,9 +175,9 @@ namespace radiants.SpriteScaler
 
 		private void OnDestroy()
 		{
+			Destroy(TargetRenderer.gameObject);
 			disposables.Dispose();
 		}
-
 
 		#endregion
 
@@ -123,7 +199,7 @@ namespace radiants.SpriteScaler
 			{
 				//normal
 				scale = new Vector3(MyRectTransform.rect.size.x / originalBounds.x, MyRectTransform.rect.size.y / originalBounds.y, 1f);
-				if (PreserveAspect.Value)
+				if (PreserveAspectReactive.Value)
 					PreserveAspectScale(ref scale);
 			}
 
@@ -147,45 +223,15 @@ namespace radiants.SpriteScaler
 
 		#region Modify Colors
 
-		//SpriteGroup[] Groups;
-		/*
-		public void ResearchParentGroups()
-		{
-			Groups = GetComponentsInParent<SpriteGroup>();
-		}
-		*/
-
-		public void UpdateAlpha()
-		{
-			if (TargetRenderer != null)
-				UpdateColor();
-		}
-
-
-		private float CalcGroupsAlpha()
-		{
-			return 1f;
-			/*
-			float ret = 1f;
-
-			for (int i = Groups.Length - 1; i >= 0; i--)
-			{
-				if (Groups[i] != null && !Groups[i].enabled) continue;
-				ret *= Groups[i].Alpha.Value;
-			}
-
-			return ret;
-			*/
-		}
 
 		private void UpdateColor()
 		{
-			Color c = color.Value;
-			c.a *= CalcGroupsAlpha();
+			Color c = ColorReactive.Value;
 			TargetRenderer.color = c;
 		}
 
 		#endregion
 
 	}
+
 }
