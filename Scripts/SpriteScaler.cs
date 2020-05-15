@@ -153,7 +153,10 @@ namespace radiants.SpriteScaler
 		private void OnDestroy()
 		{
 			//Destroy Hidden Child
-			Destroy(TargetRenderer.gameObject);
+			if (Application.isPlaying)
+				Destroy(TargetRenderer.gameObject);
+			else
+				DestroyImmediate(TargetRenderer.gameObject, false);
 		}
 
 		#endregion
