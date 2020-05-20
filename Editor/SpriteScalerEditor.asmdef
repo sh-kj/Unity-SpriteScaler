@@ -1,7 +1,8 @@
 {
     "name": "SpriteScalerEditor",
     "references": [
-        "GUID:ebda3b476f441204e9697e8e40afa1ff"
+        "GUID:ebda3b476f441204e9697e8e40afa1ff",
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UniRx;
 
 
 namespace radiants.SpriteScaler
@@ -9,91 +10,185 @@ namespace radiants.SpriteScaler
 	[RequireComponent(typeof(RectTransform))]
 	public class SpriteScaler : MonoBehaviour
 	{
-		#region Properties
+		#region Util
 
-		public Sprite RenderingSprite
+		private static Material GetUnityDefaultSpriteMaterial()
 		{
-			get
-			{
-				if (TargetRenderer == null) return null;
-				return TargetRenderer.sprite;
-			}
-			set
-			{
-				if (TargetRenderer == null) return;
-				TargetRenderer.sprite = value;
-				if (value != null)
-					AdjustSpriteScale();
-			}
-		}
-
-		private bool _preserveAspect;
-		public bool preserveAspect
-		{
-			get { return _preserveAspect; }
-			set
-			{
-				_preserveAspect = value;
-				AdjustSpriteScale();
-			}
-		}
-
-		public Color color
-		{
-			get { return TargetRenderer.color; }
-			set { TargetRenderer.color = value; }
-		}
-
-		public bool flipX
-		{
-			get { return TargetRenderer.flipX; }
-			set { TargetRenderer.flipX = value; }
-		}
-		public bool flipY
-		{
-			get { return TargetRenderer.flipY; }
-			set { TargetRenderer.flipY = value; }
-		}
-
-		public SpriteDrawMode drawMode
-		{
-			get { return TargetRenderer.drawMode; }
-			set { TargetRenderer.drawMode = value; }
-		}
-
-		public SpriteMaskInteraction maskInteraction
-		{
-			get { return TargetRenderer.maskInteraction; }
-			set { TargetRenderer.maskInteraction = value; }
-		}
-
-		public SpriteSortPoint sortPoint
-		{
-			get { return TargetRenderer.spriteSortPoint; }
-			set { TargetRenderer.spriteSortPoint = value; }
-		}
-
-		public Material material
-		{
-			get { return TargetRenderer.sharedMaterial; }
-			set { TargetRenderer.sharedMaterial = value; }
-		}
-
-		public int sortingLayerID
-		{
-			get { return TargetRenderer.sortingLayerID; }
-			set { TargetRenderer.sortingLayerID = value; }
-		}
-
-		public int orderInLayer
-		{
-			get { return TargetRenderer.sortingOrder; }
-			set { TargetRenderer.sortingOrder = value; }
+#if UNITY_EDITOR
+			return UnityEditor.AssetDatabase.GetBuiltinExtraResource<Material>("Sprites-Default.mat");
+#else
+			return Resources.GetBuiltinResource<Material>("Sprites-Default.mat");
+#endif
 		}
 
 		#endregion
 
+		#region Properties / Observables
 
+		private Subject<Unit> OnRectTransformDimensionsChangeSubject = new Subject<Unit>();
+
+		[SerializeField]
+		private SpriteReactiveProperty _RenderSprite = new SpriteReactiveProperty();
+		public Sprite renderSprite
+		{
+			get { return _RenderSprite.Value; }
+			set { _RenderSprite.Value = value; }
+		}
+
+		[SerializeField]
+		private BoolReactiveProperty _PreserveAspect = new BoolReactiveProperty(false);
+		public bool preserveAspect
+		{
+			get { return _PreserveAspect.Value; }
+			set{ _PreserveAspect.Value = value; }
+		}
+
+		[SerializeField]
+		private ColorReactiveProperty _Color = new ColorReactiveProperty(Color.white);
+		public Color color
+		{
+			get { return _Color.Value; }
+			set { _Color.Value = value; }
+		}
+
+		[SerializeField]
+		private BoolReactiveProperty _FlipX = new BoolReactiveProperty(false);
+		public bool flipX
+		{
+			get { return _FlipX.Value; }
+			set { _FlipX.Value = value; }
+		}
+
+		[SerializeField]
+		private BoolReactiveProperty _FlipY = new BoolReactiveProperty(false);
+		public bool flipY
+		{
+			get { return _FlipY.Value; }
+			set { _FlipY.Value = value; }
+		}
+
+		[SerializeField]
+		private SpriteDrawModeReactiveProperty _DrawMode = new SpriteDrawModeReactiveProperty(SpriteDrawMode.Simple);
+		public SpriteDrawMode drawMode
+		{
+			get { return _DrawMode.Value; ; }
+			set { _DrawMode.Value = value; }
+		}
+
+		[SerializeField]
+		private SpriteMaskInteractionReactiveProperty _MaskInteraction = new SpriteMaskInteractionReactiveProperty(SpriteMaskInteraction.None);
+		public SpriteMaskInteraction maskInteraction
+		{
+			get { return _MaskInteraction.Value; }
+			set { _MaskInteraction.Value = value; }
+		}
+
+		[SerializeField]
+		private SpriteSortPointReactiveProperty _SortPoint = new SpriteSortPointReactiveProperty(SpriteSortPoint.Center);
+		public SpriteSortPoint sortPoint
+		{
+			get { return _SortPoint.Value; }
+			set { _SortPoint.Value = value; }
+		}
+
+		[SerializeField]
+		private MaterialReactiveProperty _Material = new MaterialReactiveProperty();
+		public Material customMaterial
+		{
+			get { return _Material.Value; }
+			set { _Material.Value = value; }
+		}
+
+		[SerializeField]
+		private IntReactiveProperty _SortingLayerID = new IntReactiveProperty(0);
+		public int sortingLayerID
+		{
+			get { return _SortingLayerID.Value; }
+			set { _SortingLayerID.Value = value; }
+		}
+
+		[SerializeField]
+		private IntReactiveProperty _OrderInLayer = new IntReactiveProperty(0);
+		public int orderInLayer
+		{
+			get { return _OrderInLayer.Value; }
+			set { _OrderInLayer.Value = value; }
+		}
+
+		#endregion
+
+		#region Subscribes
+
+		private CompositeDisposable LifetimeDisposables = new CompositeDisposable();
+
+		private void SubscribeLifetimeObservables()
+		{
+			_RenderSprite.Subscribe(_spr => TargetRenderer.sprite = _spr)
+				.AddTo(LifetimeDisposables);
+
+			_Color.Subscribe(_col => TargetRenderer.color = _col)
+				.AddTo(LifetimeDisposables);
+
+			_FlipX.Subscribe(_flip => TargetRenderer.flipX = _flip)
+				.AddTo(LifetimeDisposables);
+			_FlipY.Subscribe(_flip => TargetRenderer.flipY = _flip)
+				.AddTo(LifetimeDisposables);
+
+			_DrawMode.Subscribe(_mode => TargetRenderer.drawMode = _mode)
+				.AddTo(LifetimeDisposables);
+			_MaskInteraction.Subscribe(_value => TargetRenderer.maskInteraction = _value)
+				.AddTo(LifetimeDisposables);
+			_SortPoint.Subscribe(_value => TargetRenderer.spriteSortPoint = _value)
+				.AddTo(LifetimeDisposables);
+
+			_Material.Subscribe(_value =>
+				{
+					if (_value == null) _value = GetUnityDefaultSpriteMaterial();
+					TargetRenderer.sharedMaterial = _value;
+				})
+				.AddTo(LifetimeDisposables);
+
+			_SortingLayerID.Subscribe(_value => TargetRenderer.sortingLayerID = _value)
+				.AddTo(LifetimeDisposables);
+			_OrderInLayer.Subscribe(_value => TargetRenderer.sortingOrder = _value)
+				.AddTo(LifetimeDisposables);
+		}
+
+		private CompositeDisposable ActiveTimeDisposables = new CompositeDisposable();
+
+		private void SubscribeActiveTimeObservables()
+		{
+			Observable.CombineLatest(_RenderSprite, _PreserveAspect, _DrawMode, (_1, _2, _3) => Unit.Default)
+				.Subscribe(_ => AdjustSpriteScale())
+				.AddTo(ActiveTimeDisposables);
+
+			OnRectTransformDimensionsChangeSubject
+				.Subscribe(_ => AdjustSpriteScale())
+				.AddTo(ActiveTimeDisposables);
+		}
+
+		public void SyncAllProperties()
+		{
+			Debug.Log("SyncAllProperties");
+
+			TargetRenderer.sprite = renderSprite;
+			TargetRenderer.color = color;
+			TargetRenderer.flipX = flipX;
+			TargetRenderer.flipY = flipY;
+			TargetRenderer.drawMode = drawMode;
+			TargetRenderer.maskInteraction = maskInteraction;
+			TargetRenderer.spriteSortPoint = sortPoint;
+
+			if (customMaterial == null)
+				TargetRenderer.sharedMaterial = GetUnityDefaultSpriteMaterial();
+			else
+				TargetRenderer.sharedMaterial = customMaterial;
+
+			TargetRenderer.sortingLayerID = sortingLayerID;
+			TargetRenderer.sortingOrder = orderInLayer;
+		}
+
+		#endregion
 
 		#region references
 
@@ -116,8 +211,10 @@ namespace radiants.SpriteScaler
 
 		private void CreateAndLinkChildSprite()
 		{
-			GameObject child = new GameObject("_Sprite");
-			child.hideFlags = HideFlags.HideAndDontSave;
+			GameObject child = new GameObject("_");
+			//check
+			child.hideFlags = HideFlags.DontSave;
+			//child.hideFlags = HideFlags.HideAndDontSave;
 			_TargetTransform = child.transform;
 			child.transform.SetParent(MyRectTransform);
 			child.transform.SetSiblingIndex(0);
@@ -131,27 +228,33 @@ namespace radiants.SpriteScaler
 
 		#region Monobehaviour callback
 
+		private void Awake()
+		{
+			SubscribeLifetimeObservables();
+		}
+
 		private void OnRectTransformDimensionsChange()
 		{
-			if(this.enabled)
-			{
-				AdjustSpriteScale();
-			}
+			OnRectTransformDimensionsChangeSubject.OnNext(Unit.Default);
 		}
 
 		private void OnEnable()
 		{
 			TargetRenderer.enabled = true;
-			AdjustSpriteScale();
+			SubscribeActiveTimeObservables();
 		}
 
 		private void OnDisable()
 		{
 			TargetRenderer.enabled = false;
+			ActiveTimeDisposables.Clear();
 		}
 
 		private void OnDestroy()
 		{
+			LifetimeDisposables.Dispose();
+			ActiveTimeDisposables.Dispose();
+
 			//Destroy Hidden Child
 			if (Application.isPlaying)
 				Destroy(TargetRenderer.gameObject);
@@ -165,17 +268,17 @@ namespace radiants.SpriteScaler
 
 		public void AdjustSpriteScale()
 		{
-			if (TargetRenderer.sprite == null) return;
+			if (renderSprite == null) return;
 
-			var originalBounds = TargetRenderer.sprite.bounds.size;
+			var originalBounds = renderSprite.bounds.size;
 			Vector3 scale;
 
-			if (TargetRenderer.drawMode == SpriteDrawMode.Sliced
-				|| TargetRenderer.drawMode == SpriteDrawMode.Tiled)
+			if (drawMode == SpriteDrawMode.Sliced
+				|| drawMode == SpriteDrawMode.Tiled)
 			{
 				//9-sliced
-				scale = new Vector3(TargetRenderer.sprite.pixelsPerUnit, TargetRenderer.sprite.pixelsPerUnit, 1f);
-				TargetRenderer.size = MyRectTransform.rect.size / TargetRenderer.sprite.pixelsPerUnit;
+				scale = new Vector3(renderSprite.pixelsPerUnit, renderSprite.pixelsPerUnit, 1f);
+				TargetRenderer.size = MyRectTransform.rect.size / renderSprite.pixelsPerUnit;
 			}
 			else
 			{

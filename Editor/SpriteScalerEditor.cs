@@ -5,23 +5,48 @@ using UnityEditor;
 using System.Linq;
 
 namespace radiants.SpriteScaler
-{
+{	
 	[CustomEditor(typeof(SpriteScaler))]
 	public class SpriteScalerEditor : Editor
 	{
+		private SpriteScaler _Target;
 		private SpriteScaler Target
-		{ get { return target as SpriteScaler; } }
+		{
+			get
+			{
+				if (_Target == null) _Target = target as SpriteScaler;
+				return _Target;
+			}
+		}
+
+
+		private void OnEnable()
+		{
+			//Undo.undoRedoPerformed += () => UndoRedo();
+		}
+
+		private void OnDisable()
+		{
+			//Undo.undoRedoPerformed -= UndoRedo;
+		}
+
+		private void UndoRedo()
+		{
+			//target is null
+			Debug.Log(Target);
+			Target.SyncAllProperties();
+		}
 
 		public override void OnInspectorGUI()
 		{
 			var preserveAspect = Target.preserveAspect;
-			var sprite = Target.RenderingSprite;
+			var sprite = Target.renderSprite;
 			var color = Target.color;
 			bool flipX = Target.flipX, flipY = Target.flipY;
 			var drawMode = Target.drawMode;
 			var maskInteraction = Target.maskInteraction;
 			var sortPoint = Target.sortPoint;
-			var material = Target.material;
+			var material = Target.customMaterial;
 			var sortingLayerID = Target.sortingLayerID;
 			var orderInLayer = Target.orderInLayer;
 
@@ -36,7 +61,7 @@ namespace radiants.SpriteScaler
 			drawMode = (SpriteDrawMode)EditorGUILayout.EnumPopup("Draw Mode", drawMode);
 			maskInteraction = (SpriteMaskInteraction)EditorGUILayout.EnumPopup("Mask Interaction", maskInteraction);
 			sortPoint = (SpriteSortPoint)EditorGUILayout.EnumPopup("Sprite Sort Point", sortPoint);
-			material = (Material)EditorGUILayout.ObjectField("Material", material, typeof(Material), false);
+			material = (Material)EditorGUILayout.ObjectField("Custom Material", material, typeof(Material), false);
 
 			var sortingLayerIndex = GetSortingLayerIndex(sortingLayerID);
 			if (sortingLayerIndex == -1) sortingLayerIndex = 0;
@@ -48,20 +73,19 @@ namespace radiants.SpriteScaler
 
 			if (EditorGUI.EndChangeCheck())
 			{
+				Undo.RecordObject(Target, "Modify SpriteScaler");
+
 				Target.preserveAspect = preserveAspect;
-				Target.RenderingSprite = sprite;
+				Target.renderSprite = sprite;
 				Target.color = color;
 				Target.flipX = flipX;
 				Target.flipY = flipY;
 				Target.drawMode = drawMode;
 				Target.maskInteraction = maskInteraction;
 				Target.sortPoint = sortPoint;
-				Target.material = material;
+				Target.customMaterial = material;
 				Target.sortingLayerID = sortingLayerID;
 				Target.orderInLayer = orderInLayer;
-
-				Undo.RecordObject(Target, "Modify SpriteScaler");
-				Target.AdjustSpriteScale();
 			}
 
 			if(GUI.changed)
