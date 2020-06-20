@@ -26,6 +26,7 @@ namespace radiants.SpriteScaler
 			var color = Target.color;
 			bool flipX = Target.flipX, flipY = Target.flipY;
 			var drawMode = Target.drawMode;
+			var scaleForTiled = Target.ScaleForTiledAndSliced;
 			var maskInteraction = Target.maskInteraction;
 			var sortPoint = Target.sortPoint;
 			var material = Target.customMaterial;
@@ -41,6 +42,10 @@ namespace radiants.SpriteScaler
 			flipX = EditorGUILayout.Toggle("Flip X", flipX);
 			flipY = EditorGUILayout.Toggle("Flip Y", flipY);
 			drawMode = (SpriteDrawMode)EditorGUILayout.EnumPopup("Draw Mode", drawMode);
+			if(drawMode != SpriteDrawMode.Simple)
+			{
+				scaleForTiled = EditorGUILayout.FloatField("Scale for Tiled/Sliced", scaleForTiled);
+			}
 			maskInteraction = (SpriteMaskInteraction)EditorGUILayout.EnumPopup("Mask Interaction", maskInteraction);
 			sortPoint = (SpriteSortPoint)EditorGUILayout.EnumPopup("Sprite Sort Point", sortPoint);
 			material = (Material)EditorGUILayout.ObjectField("Custom Material", material, typeof(Material), false);
@@ -63,6 +68,7 @@ namespace radiants.SpriteScaler
 				Target.flipX = flipX;
 				Target.flipY = flipY;
 				Target.drawMode = drawMode;
+				Target.ScaleForTiledAndSliced = scaleForTiled;
 				Target.maskInteraction = maskInteraction;
 				Target.sortPoint = sortPoint;
 				Target.customMaterial = material;

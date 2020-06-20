@@ -71,11 +71,18 @@ namespace radiants.SpriteScaler
 		private SpriteDrawModeReactiveProperty _DrawMode = new SpriteDrawModeReactiveProperty(SpriteDrawMode.Simple);
 		public SpriteDrawMode drawMode
 		{
-			get { return _DrawMode.Value; ; }
+			get { return _DrawMode.Value; }
 			set { _DrawMode.Value = value; }
 		}
 
 		//todo scale for tiled/sliced
+		[SerializeField]
+		private FloatReactiveProperty _ScaleForTiledAndSliced = new FloatReactiveProperty(1f);
+		public float ScaleForTiledAndSliced
+		{
+			get { return _ScaleForTiledAndSliced.Value; }
+			set { _ScaleForTiledAndSliced.Value = value; }
+		}
 
 		[SerializeField]
 		private SpriteMaskInteractionReactiveProperty _MaskInteraction = new SpriteMaskInteractionReactiveProperty(SpriteMaskInteraction.None);
@@ -160,7 +167,8 @@ namespace radiants.SpriteScaler
 
 		private void SubscribeActiveTimeObservables()
 		{
-			Observable.CombineLatest(_RenderSprite, _PreserveAspect, _DrawMode, (_1, _2, _3) => Unit.Default)
+			Observable.CombineLatest(_RenderSprite, _PreserveAspect, _DrawMode, _ScaleForTiledAndSliced,
+					(_1, _2, _3, _4) => Unit.Default)
 				.Subscribe(_ => AdjustSpriteScale())
 				.AddTo(ActiveTimeDisposables);
 
@@ -285,9 +293,10 @@ namespace radiants.SpriteScaler
 			if (drawMode == SpriteDrawMode.Sliced
 				|| drawMode == SpriteDrawMode.Tiled)
 			{
-				//9-sliced
-				scale = new Vector3(renderSprite.pixelsPerUnit, renderSprite.pixelsPerUnit, 1f);
-				TargetRenderer.size = MyRectTransform.rect.size / renderSprite.pixelsPerUnit;
+				//9-sliced, tiled
+				float refScale = renderSprite.pixelsPerUnit * ScaleForTiledAndSliced;
+				scale = new Vector3(refScale, refScale, 1f);
+				TargetRenderer.size = MyRectTransform.rect.size / refScale;
 			}
 			else
 			{
