@@ -75,6 +75,8 @@ namespace radiants.SpriteScaler
 			set { _DrawMode.Value = value; }
 		}
 
+		//todo scale for tiled/sliced
+
 		[SerializeField]
 		private SpriteMaskInteractionReactiveProperty _MaskInteraction = new SpriteMaskInteractionReactiveProperty(SpriteMaskInteraction.None);
 		public SpriteMaskInteraction maskInteraction
@@ -169,8 +171,6 @@ namespace radiants.SpriteScaler
 
 		public void SyncAllProperties()
 		{
-			Debug.Log("SyncAllProperties");
-
 			TargetRenderer.sprite = renderSprite;
 			TargetRenderer.color = color;
 			TargetRenderer.flipX = flipX;
@@ -186,6 +186,8 @@ namespace radiants.SpriteScaler
 
 			TargetRenderer.sortingLayerID = sortingLayerID;
 			TargetRenderer.sortingOrder = orderInLayer;
+
+			AdjustSpriteScale();
 		}
 
 		#endregion
@@ -213,8 +215,8 @@ namespace radiants.SpriteScaler
 		{
 			GameObject child = new GameObject("_");
 			//check
-			child.hideFlags = HideFlags.DontSave;
-			//child.hideFlags = HideFlags.HideAndDontSave;
+			//child.hideFlags = HideFlags.DontSave;
+			child.hideFlags = HideFlags.HideAndDontSave;
 			_TargetTransform = child.transform;
 			child.transform.SetParent(MyRectTransform);
 			child.transform.SetSiblingIndex(0);
@@ -231,6 +233,10 @@ namespace radiants.SpriteScaler
 		private void Awake()
 		{
 			SubscribeLifetimeObservables();
+
+#if UNITY_EDITOR
+			UnityEditor.Undo.undoRedoPerformed += SyncAllProperties;
+#endif
 		}
 
 		private void OnRectTransformDimensionsChange()
@@ -260,6 +266,9 @@ namespace radiants.SpriteScaler
 				Destroy(TargetRenderer.gameObject);
 			else
 				DestroyImmediate(TargetRenderer.gameObject, false);
+#if UNITY_EDITOR
+			UnityEditor.Undo.undoRedoPerformed -= SyncAllProperties;
+#endif
 		}
 
 		#endregion

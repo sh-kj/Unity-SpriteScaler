@@ -19,24 +19,6 @@ namespace radiants.SpriteScaler
 			}
 		}
 
-
-		private void OnEnable()
-		{
-			//Undo.undoRedoPerformed += () => UndoRedo();
-		}
-
-		private void OnDisable()
-		{
-			//Undo.undoRedoPerformed -= UndoRedo;
-		}
-
-		private void UndoRedo()
-		{
-			//target is null
-			Debug.Log(Target);
-			Target.SyncAllProperties();
-		}
-
 		public override void OnInspectorGUI()
 		{
 			var preserveAspect = Target.preserveAspect;
