@@ -10,19 +10,6 @@ namespace radiants.SpriteScaler
 	[RequireComponent(typeof(RectTransform))]
 	public class SpriteScaler : MonoBehaviour
 	{
-		#region Util
-
-		private static Material GetUnityDefaultSpriteMaterial()
-		{
-#if UNITY_EDITOR
-			return UnityEditor.AssetDatabase.GetBuiltinExtraResource<Material>("Sprites-Default.mat");
-#else
-			return Resources.GetBuiltinResource<Material>("Sprites-Default.mat");
-#endif
-		}
-
-		#endregion
-
 		#region Properties / Observables
 
 		private Subject<Unit> OnRectTransformDimensionsChangeSubject = new Subject<Unit>();
@@ -152,7 +139,7 @@ namespace radiants.SpriteScaler
 
 			_Material.Subscribe(_value =>
 				{
-					if (_value == null) _value = GetUnityDefaultSpriteMaterial();
+					if (_value == null) _value = DefaultSpriteMaterialUtil.DefaultSpriteMaterial;
 					TargetRenderer.sharedMaterial = _value;
 				})
 				.AddTo(LifetimeDisposables);
@@ -188,7 +175,7 @@ namespace radiants.SpriteScaler
 			TargetRenderer.spriteSortPoint = sortPoint;
 
 			if (customMaterial == null)
-				TargetRenderer.sharedMaterial = GetUnityDefaultSpriteMaterial();
+				TargetRenderer.sharedMaterial = DefaultSpriteMaterialUtil.DefaultSpriteMaterial;
 			else
 				TargetRenderer.sharedMaterial = customMaterial;
 
