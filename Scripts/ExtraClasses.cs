@@ -57,6 +57,8 @@ namespace radiants.SpriteScaler
 					return;
 				}
 			}
+			allMats = null;
+			Resources.UnloadUnusedAssets();
 		}
 
 		/* Not work on Unity 2021.x
