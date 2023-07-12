@@ -1,7 +1,7 @@
 {
 	"name": "com.radiants.spritescaler",
 	"displayName": "SpriteScaler",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"unity": "2018.4",
 	"description": "SpriteRenderer scalable with RectTransform.",
 	"license": "MIT",
