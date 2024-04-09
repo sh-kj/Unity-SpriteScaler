@@ -2,6 +2,15 @@
 
 SpriteRenderer scalable with RectTransform.
 
+## Requirement
+
+This library requires UniRx or R3.
+
+## Install via git URL
+
+for R3: https://github.com/sh-kj/Unity-SpriteScaler.git?path=R3/SpriteScaler  
+for UniRx: https://github.com/sh-kj/Unity-SpriteScaler.git?path=UniRx/SpriteScaler  
+
 ## Usage
 
 Add SpriteScaler component, and set Sprite in Inspector.  
