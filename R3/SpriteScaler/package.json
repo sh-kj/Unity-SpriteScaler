@@ -1,0 +1,11 @@
+{
+	"name": "com.radiants.spritescaler-r3",
+	"displayName": "SpriteScaler",
+	"version": "1.5.0",
+	"unity": "2021.3",
+	"description": "SpriteRenderer scalable with RectTransform.",
+	"license": "MIT",
+	"dependencies": {
+		"com.cysharp.r3": "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity"
+	}
+}

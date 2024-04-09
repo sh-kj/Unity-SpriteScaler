@@ -1,0 +1,19 @@
+{
+    "name": "SpriteScalerEditor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:ebda3b476f441204e9697e8e40afa1ff",
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
