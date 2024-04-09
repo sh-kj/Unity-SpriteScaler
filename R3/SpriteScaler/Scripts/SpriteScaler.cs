@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UniRx;
+using R3;
 
 
 namespace radiants.SpriteScaler
@@ -15,7 +15,7 @@ namespace radiants.SpriteScaler
 		private Subject<Unit> OnRectTransformDimensionsChangeSubject = new Subject<Unit>();
 
 		[SerializeField]
-		private SpriteReactiveProperty _RenderSprite = new SpriteReactiveProperty();
+		private SerializableReactiveProperty<Sprite> _RenderSprite = new SerializableReactiveProperty<Sprite>();
 		public Sprite renderSprite
 		{
 			get { return _RenderSprite.Value; }
@@ -23,7 +23,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private BoolReactiveProperty _PreserveAspect = new BoolReactiveProperty(false);
+		private SerializableReactiveProperty<bool> _PreserveAspect = new SerializableReactiveProperty<bool>(false);
 		public bool preserveAspect
 		{
 			get { return _PreserveAspect.Value; }
@@ -31,7 +31,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private ColorReactiveProperty _Color = new ColorReactiveProperty(Color.white);
+		private SerializableReactiveProperty<Color> _Color = new SerializableReactiveProperty<Color>(Color.white);
 		public Color color
 		{
 			get { return _Color.Value; }
@@ -39,7 +39,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private BoolReactiveProperty _FlipX = new BoolReactiveProperty(false);
+		private SerializableReactiveProperty<bool> _FlipX = new SerializableReactiveProperty<bool>(false);
 		public bool flipX
 		{
 			get { return _FlipX.Value; }
@@ -47,7 +47,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private BoolReactiveProperty _FlipY = new BoolReactiveProperty(false);
+		private SerializableReactiveProperty<bool> _FlipY = new SerializableReactiveProperty<bool>(false);
 		public bool flipY
 		{
 			get { return _FlipY.Value; }
@@ -55,7 +55,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private SpriteDrawModeReactiveProperty _DrawMode = new SpriteDrawModeReactiveProperty(SpriteDrawMode.Simple);
+		private SerializableReactiveProperty<SpriteDrawMode> _DrawMode = new SerializableReactiveProperty<SpriteDrawMode>(SpriteDrawMode.Simple);
 		public SpriteDrawMode drawMode
 		{
 			get { return _DrawMode.Value; }
@@ -64,7 +64,7 @@ namespace radiants.SpriteScaler
 
 		//todo scale for tiled/sliced
 		[SerializeField]
-		private FloatReactiveProperty _ScaleForTiledAndSliced = new FloatReactiveProperty(1f);
+		private SerializableReactiveProperty<float> _ScaleForTiledAndSliced = new SerializableReactiveProperty<float>(1f);
 		public float ScaleForTiledAndSliced
 		{
 			get { return _ScaleForTiledAndSliced.Value; }
@@ -72,7 +72,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private SpriteMaskInteractionReactiveProperty _MaskInteraction = new SpriteMaskInteractionReactiveProperty(SpriteMaskInteraction.None);
+		private SerializableReactiveProperty<SpriteMaskInteraction> _MaskInteraction = new SerializableReactiveProperty<SpriteMaskInteraction>(SpriteMaskInteraction.None);
 		public SpriteMaskInteraction maskInteraction
 		{
 			get { return _MaskInteraction.Value; }
@@ -80,7 +80,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private SpriteSortPointReactiveProperty _SortPoint = new SpriteSortPointReactiveProperty(SpriteSortPoint.Center);
+		private SerializableReactiveProperty<SpriteSortPoint> _SortPoint = new SerializableReactiveProperty<SpriteSortPoint>(SpriteSortPoint.Center);
 		public SpriteSortPoint sortPoint
 		{
 			get { return _SortPoint.Value; }
@@ -88,7 +88,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private MaterialReactiveProperty _Material = new MaterialReactiveProperty();
+		private SerializableReactiveProperty<Material> _Material = new SerializableReactiveProperty<Material>();
 		public Material customMaterial
 		{
 			get { return _Material.Value; }
@@ -96,7 +96,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private IntReactiveProperty _SortingLayerID = new IntReactiveProperty(0);
+		private SerializableReactiveProperty<int> _SortingLayerID = new SerializableReactiveProperty<int>(0);
 		public int sortingLayerID
 		{
 			get { return _SortingLayerID.Value; }
@@ -104,7 +104,7 @@ namespace radiants.SpriteScaler
 		}
 
 		[SerializeField]
-		private IntReactiveProperty _OrderInLayer = new IntReactiveProperty(0);
+		private SerializableReactiveProperty<int> _OrderInLayer = new SerializableReactiveProperty<int>(0);
 		public int orderInLayer
 		{
 			get { return _OrderInLayer.Value; }
@@ -154,14 +154,12 @@ namespace radiants.SpriteScaler
 
 		private void SubscribeActiveTimeObservables()
 		{
-			Observable.CombineLatest(_RenderSprite, _PreserveAspect, _DrawMode, _ScaleForTiledAndSliced,
-					(_1, _2, _3, _4) => Unit.Default)
-				.Subscribe(_ => AdjustSpriteScale())
-				.AddTo(ActiveTimeDisposables);
+			_RenderSprite.Subscribe(_ => AdjustSpriteScale()).AddTo(ActiveTimeDisposables);
+			_PreserveAspect.Subscribe(_ => AdjustSpriteScale()).AddTo(ActiveTimeDisposables);
+			_DrawMode.Subscribe(_ => AdjustSpriteScale()).AddTo(ActiveTimeDisposables);
+			_ScaleForTiledAndSliced.Subscribe(_ => AdjustSpriteScale()).AddTo(ActiveTimeDisposables);
 
-			OnRectTransformDimensionsChangeSubject
-				.Subscribe(_ => AdjustSpriteScale())
-				.AddTo(ActiveTimeDisposables);
+			OnRectTransformDimensionsChangeSubject.Subscribe(_ => AdjustSpriteScale()).AddTo(ActiveTimeDisposables);
 		}
 
 		public void SyncAllProperties()
